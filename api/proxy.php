@@ -1,15 +1,16 @@
 <?php
 /**
- * Simple Telegram API Proxy
- * Just place this file as index.php on your host.
- * Example call:
- * https://yourhost.com/botTOKEN/getMe
+ * Transparent Telegram Bot API Proxy for Vercel
+ * Usage:
+ * https://your-vercel-app.vercel.app/api/proxy.php/bot<YOUR_TOKEN>/<METHOD>
  */
 
 $telegramBase = "https://api.telegram.org";
 
-// Build full Telegram URL
-$path = $_SERVER['REQUEST_URI']; // includes /botTOKEN/...
+// Strip /api/proxy.php prefix from request URI
+$path = $_SERVER['REQUEST_URI'];
+$path = preg_replace('#^/api/proxy.php#', '', $path);
+
 $url = $telegramBase . $path;
 
 // Initialize cURL
@@ -40,9 +41,10 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $response = curl_exec($ch);
 if ($response === false) {
     http_response_code(500);
-    echo "cURL Error: " . curl_error($ch);
+    echo json_encode(["error" => curl_error($ch)]);
     exit;
 }
 
 // Output Telegram response
+header('Content-Type: application/json');
 echo $response;
