@@ -1,13 +1,17 @@
 <?php
-//file_get_contents('https://api.ephpic.org/hooks/telegram');
+/**
+ * Transparent Telegram Proxy for Vercel
+ * Forwards all requests and headers exactly to Laravel backend.
+ */
 
-$ephpicBase = "https://api.ephpic.org/hooks/telegram";
+$laravelWebhook = "https://api.ephpic.org/hooks/telegram";
 
-// Strip /api/hook.php prefix from request URI
+// Keep the path after /api/hook.php
 $path = $_SERVER['REQUEST_URI'];
 $path = preg_replace('#^/api/hook.php#', '', $path);
 
-$url = $ephpicBase . $path;
+// Forward to Laravel
+$url = $laravelWebhook . $path;
 
 // Initialize cURL
 $ch = curl_init($url);
@@ -15,17 +19,19 @@ $ch = curl_init($url);
 // Forward HTTP method
 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
 
-// Forward raw body if exists
-$input = file_get_contents("php://input");
-if (!empty($input)) {
+// Forward raw body
+$input = file_get_contents('php://input');
+if ($input !== false && $input !== '') {
     curl_setopt($ch, CURLOPT_POSTFIELDS, $input);
 }
 
-// Forward headers except host
+// Forward all headers except host
 $headers = [];
 if (function_exists('getallheaders')) {
     foreach (getallheaders() as $k => $v) {
-        if (strtolower($k) !== 'host') $headers[] = "$k: $v";
+        if (strtolower($k) !== 'host') {
+            $headers[] = "$k: $v";
+        }
     }
 }
 curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
@@ -33,16 +39,28 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 // Return response
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-// Execute
+// Optional: forward response headers
+curl_setopt($ch, CURLOPT_HEADER, false);
+
+// Execute cURL
 $response = curl_exec($ch);
+$curlErr = curl_error($ch);
+
+// Handle cURL errors
 if ($response === false) {
     http_response_code(500);
-    echo json_encode(["error" => curl_error($ch)]);
+    header('Content-Type: application/json');
+    echo json_encode(["error" => $curlErr]);
     exit;
 }
 
-// Output Telegram response
-header('Content-Type: application/json');
+// Return the exact backend response
+// Keep Content-Type from backend if possible
+$contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+if ($contentType) {
+    header("Content-Type: $contentType");
+} else {
+    header("Content-Type: application/json");
+}
+
 echo $response;
-
-
