@@ -1,14 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import fetch from 'node-fetch';
 
-// Telegram bot token from environment
+// Get bot token from environment
 const BOT_TOKEN = process.env.BOT_TOKEN;
+
+// Fail fast if BOT_TOKEN not set
 if (!BOT_TOKEN) {
-  console.error('BOT_TOKEN is not defined in environment variables.');
+  console.error('BOT_TOKEN is not defined!');
 }
 
 // Helper to send messages
 async function sendMessage(chat_id: number, text: string) {
+  if (!BOT_TOKEN) return;
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
   await fetch(url, {
     method: 'POST',
@@ -19,47 +22,53 @@ async function sendMessage(chat_id: number, text: string) {
 
 // Main webhook handler
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Allow GET for quick test in browser
-  if (req.method === 'GET') {
-    return res.status(200).send('Telegram webhook is live!');
-  }
-
-  // Only accept POST for actual webhook calls
-  if (req.method !== 'POST') {
-    return res.status(405).send('Method Not Allowed');
-  }
-
   try {
+    // Allow GET for testing in browser
+    if (req.method === 'GET') {
+      return res.status(200).send('Telegram webhook is live!');
+    }
+
+    // Only accept POST for actual Telegram updates
+    if (req.method !== 'POST') {
+      return res.status(405).send('Method Not Allowed');
+    }
+
     const update = req.body;
 
-    // --- Message handling ---
+    // Make sure we have a valid update object
+    if (!update) {
+      return res.status(400).send('Bad Request: Empty body');
+    }
+
+    // Handle messages
     if (update.message) {
-      const chat_id = update.message.chat.id;
+      const chat_id = update.message.chat?.id;
       const text = update.message.text || '';
 
-      console.log('Received message:', text);
-
-      if (text === '/start') {
-        await sendMessage(chat_id, 'Welcome! Your bot is now active.');
-      } else if (text.startsWith('/echo ')) {
-        const reply = text.replace('/echo ', '');
-        await sendMessage(chat_id, `You said: ${reply}`);
-      } else {
-        await sendMessage(chat_id, `I received: ${text}`);
+      if (chat_id) {
+        if (text === '/start') {
+          await sendMessage(chat_id, 'Welcome! Your bot is active.');
+        } else if (text.startsWith('/echo ')) {
+          const reply = text.slice(6);
+          await sendMessage(chat_id, `You said: ${reply}`);
+        } else {
+          await sendMessage(chat_id, `I received: ${text}`);
+        }
       }
     }
 
-    // --- Callback query handling ---
+    // Handle callback queries
     if (update.callback_query) {
-      const chat_id = update.callback_query.message.chat.id;
-      const data = update.callback_query.data;
-      console.log('Callback query:', data);
-      await sendMessage(chat_id, `You clicked: ${data}`);
+      const chat_id = update.callback_query.message?.chat?.id;
+      const data = update.callback_query.data || '';
+      if (chat_id) {
+        await sendMessage(chat_id, `You clicked: ${data}`);
+      }
     }
 
     res.status(200).send('OK');
   } catch (err) {
-    console.error('Error handling Telegram webhook:', err);
+    console.error('Error in Telegram webhook:', err);
     res.status(500).send('Internal Server Error');
   }
 }
