@@ -7,11 +7,15 @@
 $laravelWebhook = "https://api.ephpic.org/hooks/telegram";
 
 // Keep the path after /api/hook.php
-$path = $_SERVER['REQUEST_URI'];
-$path = preg_replace('#^/api/hook.php#', '', $path);
+$path = preg_replace('#^/api/hook.php#', '', $_SERVER['REQUEST_URI']);
+$path = strtok($path, '?'); // remove query string from path
 
-// Forward to Laravel
+// Build URL with query string
+$query = $_SERVER['QUERY_STRING'] ?? '';
 $url = $laravelWebhook . $path;
+if ($query) {
+    $url .= '?' . $query;
+}
 
 // Initialize cURL
 $ch = curl_init($url);
