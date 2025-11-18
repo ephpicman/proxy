@@ -10,7 +10,7 @@ async function getRawBody(req: VercelRequest): Promise<Buffer> {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    const targetUrl = 'https://api.ephpic.org/hooks/telegram';
+    const targetUrl = 'https://api.ephpic.org/api/hooks/telegram';
 
     const bodyBuffer = await getRawBody(req);
 
