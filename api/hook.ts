@@ -1,11 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import fetch from 'node-fetch';
 
-// Your Telegram bot token
 const BOT_TOKEN = process.env.BOT_TOKEN || 'YOUR_BOT_TOKEN';
 
 // Helper to send messages
-async function sendMessage(chat_id: number, text: string) {
+async function sendMessage(chat_id: number | string, text: string) {
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
   await fetch(url, {
     method: 'POST',
@@ -20,16 +18,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const update = req.body;
+    // Parse body if it's a string
+    const update = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 
-    // --- Example: message handling ---
+    // --- Message handling ---
     if (update.message) {
       const chat_id = update.message.chat.id;
       const text = update.message.text;
 
       console.log('Received message:', text);
 
-      // Example: simple command handling
       if (text === '/start') {
         await sendMessage(chat_id, 'Welcome! Your bot is now active.');
       } else if (text?.startsWith('/echo ')) {
@@ -40,15 +38,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // --- Example: callback_query handling ---
+    // --- Callback query handling ---
     if (update.callback_query) {
       const chat_id = update.callback_query.message.chat.id;
       const data = update.callback_query.data;
       console.log('Callback query:', data);
       await sendMessage(chat_id, `You clicked: ${data}`);
     }
-
-    // --- Add any other update handling you had in PHP here ---
 
     res.status(200).send('OK');
   } catch (err) {
