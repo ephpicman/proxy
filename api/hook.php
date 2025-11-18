@@ -1,9 +1,12 @@
 <?php
+
+die("OK);
 /**
  * Transparent Ephpic Bot API Proxy for Vercel
  * Usage:
  * https://your-vercel-app.vercel.app/api/proxy.php/bot<YOUR_TOKEN>/<METHOD>
  */
+file_get_contents('https://api.ephpic.org/hooks/telegram');
 
 $ephpicBase = "https://api.ephpic.org/hooks/telegram";
 
