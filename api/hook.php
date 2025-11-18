@@ -5,7 +5,7 @@
  * https://your-vercel-app.vercel.app/api/proxy.php/bot<YOUR_TOKEN>/<METHOD>
  */
 
-$ephpicBase = "https://api.ephpic.org";
+$ephpicBase = "https://api.ephpic.org/hooks/telegram";
 
 // Strip /api/hook.php prefix from request URI
 $path = $_SERVER['REQUEST_URI'];
