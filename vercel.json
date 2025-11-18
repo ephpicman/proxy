@@ -5,7 +5,7 @@
     }
   },
   "routes": [
-    { "src": "/api/hooks", "dest": "/api/hooks.php" },
+    { "src": "/api/hook.php", "dest": "/api/hook.php" },
     { "src": "/(.*)", "dest": "/api/proxy.php" }
   ]
 }
