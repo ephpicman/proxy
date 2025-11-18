@@ -1,9 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import fetch from 'node-fetch';
 
-const BOT_TOKEN = process.env.BOT_TOKEN || 'YOUR_BOT_TOKEN';
+// Telegram bot token from environment
+const BOT_TOKEN = process.env.BOT_TOKEN;
+if (!BOT_TOKEN) {
+  console.error('BOT_TOKEN is not defined in environment variables.');
+}
 
 // Helper to send messages
-async function sendMessage(chat_id: number | string, text: string) {
+async function sendMessage(chat_id: number, text: string) {
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
   await fetch(url, {
     method: 'POST',
@@ -12,25 +17,31 @@ async function sendMessage(chat_id: number | string, text: string) {
   });
 }
 
+// Main webhook handler
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Allow GET for quick test in browser
+  if (req.method === 'GET') {
+    return res.status(200).send('Telegram webhook is live!');
+  }
+
+  // Only accept POST for actual webhook calls
   if (req.method !== 'POST') {
     return res.status(405).send('Method Not Allowed');
   }
 
   try {
-    // Parse body if it's a string
-    const update = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const update = req.body;
 
     // --- Message handling ---
     if (update.message) {
       const chat_id = update.message.chat.id;
-      const text = update.message.text;
+      const text = update.message.text || '';
 
       console.log('Received message:', text);
 
       if (text === '/start') {
         await sendMessage(chat_id, 'Welcome! Your bot is now active.');
-      } else if (text?.startsWith('/echo ')) {
+      } else if (text.startsWith('/echo ')) {
         const reply = text.replace('/echo ', '');
         await sendMessage(chat_id, `You said: ${reply}`);
       } else {
