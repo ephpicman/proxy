@@ -59,8 +59,6 @@ if ($response === false) {
 $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
 if ($contentType) {
     header("Content-Type: $contentType");
-} else {
-    header("Content-Type: application/json");
 }
 
 echo $response;
